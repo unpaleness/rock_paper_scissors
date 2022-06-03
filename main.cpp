@@ -10,11 +10,11 @@ static inline char int_to_char(const int i)
     switch (i)
     {
     case 0:
-        return 'R';
+        return '*'; // Rock
     case 1:
-        return 'P';
+        return '|'; // Paper
     case 2:
-        return 'S';
+        return 'X'; // Scissors
     default:
         return '.';
     }
@@ -67,73 +67,62 @@ public:
         {
             std::cerr << __FUNCTION__ << ": storage is invalid";
         }
+
+        std::cout.flush();
     }
 
     void iterate()
     {
         ++iteration;
-        iteration % 2 ? play_vertically() : play_horizontally();
+        const auto seed = rand() % 4;
+        if (seed % 2)
+        {
+            play_vertically(((seed + 1) / 2) % 2);
+        }
+        else
+        {
+            play_horizontally(((seed + 1) / 2) % 2);
+        }
     }
 
 private:
     std::shared_ptr<std::vector<int>> get_storage() const { return iteration % 2 ? storage1_ptr : storage0_ptr; }
     std::shared_ptr<std::vector<int>> get_old_storage() const { return iteration % 2 ? storage0_ptr : storage1_ptr; }
-    bool do_shift() const { return !(((iteration + 1) / 2) % 2); }
-    void play_vertically()
+    void play_vertically(const bool do_shift)
     {
         auto storage_ptr = get_storage();
         auto old_storage_ptr = get_old_storage();
-        if (do_shift())
+        if (do_shift)
         {
             for (size_t i = 0; i < x; ++i)
             {
-                storage_ptr->at(i) = old_storage_ptr->at(i);
+                sparring(i, (y - 1) * x + i);
             }
         }
-        for (size_t j = do_shift() ? 1 : 0; j < y; j += 2)
+        for (size_t j = do_shift ? 1 : 0; j < y - 1; j += 2)
         {
-            if (j == y - 1)
+            for (size_t i = 0; i < x; ++i)
             {
-                for (size_t i = 0; i < x; ++i)
-                {
-                    storage_ptr->at(j * x + i) = old_storage_ptr->at(j * x + i);
-                }
-            }
-            else
-            {
-                for (size_t i = 0; i < x; ++i)
-                {
-                    sparring(j * x + i, (j + 1) * x + i);
-                }
+                sparring(j * x + i, (j + 1) * x + i);
             }
         }
     }
-    void play_horizontally()
+    void play_horizontally(const bool do_shift)
     {
         auto storage_ptr = get_storage();
         auto old_storage_ptr = get_old_storage();
-        if (do_shift())
+        if (do_shift)
         {
             for (size_t j = 0; j < y; ++j)
             {
-                storage_ptr->at(j * x) = old_storage_ptr->at(j * x);
+                sparring(j * x, (j + 1) * x - 1);
             }
         }
-        for (size_t i = do_shift() ? 1 : 0; i < x; i += 2)
+        for (size_t i = do_shift ? 1 : 0; i < x - 1; i += 2)
         {
-            if (i == x - 1)
+            for (size_t j = 0; j < y; ++j)
             {
-                for (size_t j = 0; j < y; ++j)
-                {
-                    storage_ptr->at(j * x + i) = old_storage_ptr->at(j * x + i);
-                }
-            }
-            else
-            {
-                for (size_t j = 0; j < y; ++j)
-                {
-                    sparring(j * x + i, j * x + i + 1);
-                }
+                sparring(j * x + i, j * x + i + 1);
             }
         }
     }
@@ -164,6 +153,12 @@ int main(int argc, char *argv[])
     if (argc <= 4)
     {
         std::cerr << "Usage: <x> <y> <delay (ns)> <iterations limit>\n";
+        return 1;
+    }
+
+    if (atoi(argv[1]) % 2 || atoi(argv[2]) % 2)
+    {
+        std::cerr << "x and y should be even\n";
         return 1;
     }
 
